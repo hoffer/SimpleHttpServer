@@ -71,7 +71,7 @@ namespace SimpleHttpServer
             
             // default to text/html content type
             if (!response.Headers.ContainsKey("Content-Type")) {
-                response.Headers["Content-Type"] = "text/html";
+                response.Headers["Content-Type"] = "text/markdown";
             }
 
             response.Headers["Content-Length"] = response.Content.Length.ToString();

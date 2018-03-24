@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using System.IO;
 using SimpleHttpServer;
 using SimpleHttpServer.Models;
 using SimpleHttpServer.RouteHandlers;
@@ -15,9 +15,34 @@ namespace SimpleHttpServer.App
 {
     class Program
     {
+        static string appLocation;
+
+        public static HttpResponse ComposeResponseLog(HttpRequest request)
+        {
+            var frontPath = request.Path.Split('?')[0];
+            var filename = Path.GetFileName(frontPath);
+            var filePath = Path.Combine(appLocation, "logs", filename);
+            var content = "## Conflict Accessing file "+ filePath;
+            try
+            {
+                content = File.ReadAllText(filePath);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Read file [{0}] Error: {1}", filePath, e.ToString());
+            }
+            return new HttpResponse()
+            {
+                ContentAsUTF8 = content,
+                ReasonPhrase = "OK",
+                StatusCode = "200"
+            };
+        }
+
         static void Main(string[] args)
         {
             log4net.Config.XmlConfigurator.Configure();
+            appLocation = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
             var route_config = new List<Models.Route>() {
                 new Route {
@@ -32,7 +57,13 @@ namespace SimpleHttpServer.App
                             StatusCode = "200"
                         };
                      }
-                }, 
+                },
+                new Route {
+                    Name = "Text File Static Handler",
+                    UrlRegex = @"^/logs/.*",
+                    Method = "GET",
+                    Callable = ComposeResponseLog
+                },
                 //new Route {   
                 //    Name = "FileSystem Static Handler",
                 //    UrlRegex = @"^/Static/(.*)$",
