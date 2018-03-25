@@ -16,21 +16,44 @@ namespace SimpleHttpServer.App
     class Program
     {
         static string appLocation;
-
+        const string STATUS_ROUTE = "status";
+        static string[] allowedType =
+        {
+            ".md",
+            ".txt",
+            ".log"
+        };
         public static HttpResponse ComposeResponseLog(HttpRequest request)
         {
-            var frontPath = request.Path.Split('?')[0];
-            var filename = Path.GetFileName(frontPath);
-            var filePath = Path.Combine(appLocation, "logs", filename);
-            var content = "## Conflict Accessing file "+ filePath;
-            try
+            var content = "## Error Accessing Path " + request.Path;
+
+            string[] stringSeparators = new string[] { $"/{STATUS_ROUTE}/" };
+            var requestPathSplited = request.Path.Split(stringSeparators, StringSplitOptions.None);
+
+            if (requestPathSplited.Length == 2)
             {
-                content = File.ReadAllText(filePath);
+                var relativeFilePath = requestPathSplited[1].Split('?')[0];
+                var fileext = Path.GetExtension(relativeFilePath);
+
+                var match = allowedType.ToList().FirstOrDefault(x => string.Equals(x, fileext, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(match))
+                {
+                    var filePath = Path.Combine(appLocation, relativeFilePath);
+                    try
+                    {
+                        content = File.ReadAllText(filePath);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Read file [{0}] Error: {1}", filePath, e.ToString());
+                    }
+                }
+                else
+                {
+                    content = "## Access Denied on Path " + request.Path;
+                }
             }
-            catch (Exception e)
-            {
-                Console.WriteLine("Read file [{0}] Error: {1}", filePath, e.ToString());
-            }
+
             return new HttpResponse()
             {
                 ContentAsUTF8 = content,
@@ -60,7 +83,7 @@ namespace SimpleHttpServer.App
                 },
                 new Route {
                     Name = "Text File Static Handler",
-                    UrlRegex = @"^/logs/.*",
+                    UrlRegex = @"^/"+STATUS_ROUTE+@"/.*",
                     Method = "GET",
                     Callable = ComposeResponseLog
                 },

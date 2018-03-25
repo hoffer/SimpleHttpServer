@@ -48,7 +48,14 @@ namespace SimpleHttpServer
                 TcpClient s = this.Listener.AcceptTcpClient();
                 Thread thread = new Thread(() =>
                 {
-                    this.Processor.HandleClient(s);
+                    try
+                    {
+                        this.Processor.HandleClient(s);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Exception caught HandleClient(): {0}", e.ToString());
+                    }
                 });
                 thread.Start();
                 Thread.Sleep(1);
